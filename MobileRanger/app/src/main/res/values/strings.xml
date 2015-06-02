@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Mobile Ranger</string>
+
+    <string name="global_location">Location</string>
+
+    <string name="form_date_title">Date</string>
+    <string name="form_reporting_employee_title">Reporting Employee</string>
+    <string name="form_details_title">Details</string>
+    <string name="form_action_taken_title">Action Taken</string>
+    <string name="form_photos_title">Photos</string>
+    <string name="form_before_title">Before</string>
+    <string name="form_after">After</string>
+    <string name="form_take_photo">Take Photo</string>
+
+
+
+</resources>
