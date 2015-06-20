@@ -12,7 +12,7 @@ public abstract class PdfWritable {
 
     Document mDocument;
 
-    public abstract void write();
+    public abstract String write();
 
     protected Document openDocument(String filename) {
         if(mDocument == null) {
