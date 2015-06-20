@@ -27,8 +27,8 @@ public class TreeReportWriter extends PdfWritable {
     private static final int ROW_HEIGHT = 90;
     private static final int TITLE_PADDING = 18;
     private static final int TITLE_FONT = 18;
-    private static final int IMAGE_WIDTH = 350;
-    private static final int IMAGE_HEIGHT = 250;
+    private static final int IMAGE_WIDTH = 250;
+    private static final int IMAGE_HEIGHT = 150;
 
 
     public TreeReportWriter(TreeReport treeReport, String filename, String title) {
@@ -52,7 +52,7 @@ public class TreeReportWriter extends PdfWritable {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        }/
+        }
         document.close();
 
         return mFilename;
@@ -73,17 +73,28 @@ public class TreeReportWriter extends PdfWritable {
         PdfPTable table = new PdfPTable(new float[]{1f, 3f});
         table.setWidthPercentage(100f);
 
-        getParagraph(table, "Date", mTreeReport.getDate(),0);
-        getParagraph(table, "Reporting Employee", mTreeReport.getReportingEmployee(),0);
-        getParagraph(table,"Location", mTreeReport.getLocation(),0);
-        getParagraph(table,"Details", mTreeReport.getDetails(),ROW_HEIGHT);
-        getParagraph(table,"Action Taken", mTreeReport.getActionTaken(),ROW_HEIGHT);
+        getParagraph(table, "Date", mTreeReport.getDate(), 0);
+        getParagraph(table, "Reporting Employee", mTreeReport.getReportingEmployee(), 0);
+        getParagraph(table, "Location", mTreeReport.getLocation(), 0);
+        getParagraph(table, "Details", mTreeReport.getDetails(), ROW_HEIGHT);
+        getParagraph(table, "Action Taken", mTreeReport.getActionTaken(), ROW_HEIGHT);
 
-        addImageParagraph(table, "Before Photo", mTreeReport.getBeforeImagePath());
-        addImageParagraph(table, "After Photo", mTreeReport.getAfterImagePath());
+        addImageRow(table, "Before Photo", "After Photo");
 
         document.add(table);
 
+    }
+
+    private void addImageRow(PdfPTable table, String beforeText, String afterText) throws DocumentException, IOException {
+        PdfPTable innerTable = new PdfPTable(2);
+        addImageTitle(innerTable, beforeText);
+        addImageTitle(innerTable, afterText);
+        getImageCell(innerTable, mTreeReport.getBeforeImagePath());
+        getImageCell(innerTable, mTreeReport.getAfterImagePath());
+
+        PdfPCell cell = new PdfPCell(innerTable);
+        cell.setColspan(2);
+        table.addCell(cell);
     }
 
     private void getParagraph(PdfPTable table, String introText, String content, float minimumHeight) {
@@ -99,17 +110,29 @@ public class TreeReportWriter extends PdfWritable {
         table.addCell(contentCell);
     }
 
-    private void addImageParagraph(PdfPTable table, String header, String imagePath) throws DocumentException, MalformedURLException , IOException{
-        table.addCell(new Paragraph(header, boldFont));
+    private void addImageTitle(PdfPTable table, String title) {
+        PdfPCell titleCell = new PdfPCell(new Paragraph(title, boldFont));
+        titleCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        table.addCell(titleCell);
+    }
+
+    private void getImageCell(PdfPTable table, String imagePath) throws DocumentException, MalformedURLException , IOException {
+       // PdfPTable innerTable = new PdfPTable(1);
+        //innerTable.addCell(new Paragraph(header, boldFont));
+        PdfPCell cell;
         if(imagePath != null && !imagePath.isEmpty()) {
             Image image = Image.getInstance(imagePath);
             image.scaleToFit(IMAGE_WIDTH, IMAGE_HEIGHT);
-            PdfPCell cell = new PdfPCell(image);
+            cell = new PdfPCell(image);
             cell.setPadding(5);
-            table.addCell(cell);
+          //  innerTable.addCell(cell);
         } else {
-            table.addCell("");
+            cell = new PdfPCell(new Phrase(""));
+            cell.setMinimumHeight(50);
+            table.addCell(cell);
         }
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        table.addCell(cell);
     }
 
     private Paragraph createTitleParagraph() {
