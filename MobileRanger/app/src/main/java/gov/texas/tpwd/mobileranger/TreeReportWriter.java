@@ -70,19 +70,29 @@ public class TreeReportWriter extends PdfWritable {
         dummy.setLeading(TITLE_PADDING);
         document.add(dummy);
 
-        PdfPTable table = new PdfPTable(new float[]{1f, 3f});
-        table.setWidthPercentage(100f);
+        PdfPTable titleTable = new PdfPTable(new float[]{1f, 3f});
+        titleTable.setWidthPercentage(100f);
+        getParagraph(titleTable, "Date", mTreeReport.getDate(), 0);
+        getParagraph(titleTable, "Reporting Employee", mTreeReport.getReportingEmployee(), 0);
+        document.add(titleTable);
 
-        getParagraph(table, "Date", mTreeReport.getDate(), 0);
-        getParagraph(table, "Reporting Employee", mTreeReport.getReportingEmployee(), 0);
-        getParagraph(table, "Location", mTreeReport.getLocation(), 0);
-        getParagraph(table, "Details", mTreeReport.getDetails(), ROW_HEIGHT);
-        getParagraph(table, "Action Taken", mTreeReport.getActionTaken(), ROW_HEIGHT);
-
-        addImageRow(table, "Before Photo", "After Photo");
+        PdfPTable table = createTableForLocation();
 
         document.add(table);
 
+    }
+
+    private PdfPTable createTableForLocation() throws DocumentException, IOException {
+        PdfPTable table = new PdfPTable(new float[]{1f, 3f});
+        table.setWidthPercentage(100f);
+
+
+        getParagraph(table, "Location", mTreeReport.getLocation(), 0);
+        getParagraph(table, "Details", mTreeReport.getDetails(), ROW_HEIGHT);
+        getParagraph(table, "Action Taken", mTreeReport.getActionTaken(), ROW_HEIGHT);
+        addImageRow(table, "Before Photo", "After Photo");
+
+        return table;
     }
 
     private void addImageRow(PdfPTable table, String beforeText, String afterText) throws DocumentException, IOException {
