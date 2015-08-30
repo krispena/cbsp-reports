@@ -1,15 +1,14 @@
 package gov.texas.tpwd.mobileranger;
 
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class TreeReport {
 
     private String mDate;
     private String mReportingEmployee;
-    private String mLocation;
-    private String mDetails;
-    private String mActionTaken;
-    private String mBeforeImagePath;
-    private String mAfterImagePath;
+    private List<TreeLocation> locations;
 
     public String getDate() {
         return mDate;
@@ -27,43 +26,18 @@ public class TreeReport {
         this.mReportingEmployee = reportingEmployee;
     }
 
-    public String getLocation() {
-        return mLocation;
+    public List<TreeLocation> getLocations() {
+        return locations;
     }
 
-    public void setLocation(String location) {
-        this.mLocation = location;
+    public void setLocations(List<TreeLocation> locations) {
+        this.locations = locations;
     }
 
-    public String getDetails() {
-        return mDetails;
-    }
-
-    public void setDetails(String details) {
-        this.mDetails = details;
-    }
-
-    public String getActionTaken() {
-        return mActionTaken;
-    }
-
-    public void setActionTaken(String actionTaken) {
-        this.mActionTaken = actionTaken;
-    }
-
-    public String getBeforeImagePath() {
-        return mBeforeImagePath;
-    }
-
-    public void setBeforeImagePath(String beforeImagePath) {
-        this.mBeforeImagePath = beforeImagePath;
-    }
-
-    public String getAfterImagePath() {
-        return mAfterImagePath;
-    }
-
-    public void setAfterImagePath(String afterImagePath) {
-        this.mAfterImagePath = afterImagePath;
+    public void addLocation(TreeLocation location) {
+        if(locations == null) {
+            locations = new ArrayList<TreeLocation>();
+        }
+        locations.add(location);
     }
 }

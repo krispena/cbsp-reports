@@ -1,6 +1,8 @@
 package gov.texas.tpwd.mobileranger;
 
 
+import android.content.Context;
+
 import com.itextpdf.text.Chunk;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
@@ -58,7 +60,7 @@ public class TreeReportWriter extends PdfWritable {
         return mFilename;
     }
 
-    private void writeTree(Document document) throws DocumentException, MalformedURLException, IOException {
+    private void writeTree(Document document) throws DocumentException, IOException {
         if(mTreeReport == null) {
             return;
         }
@@ -66,41 +68,49 @@ public class TreeReportWriter extends PdfWritable {
         Paragraph title = createTitleParagraph();
         document.add(title);
 
-        Paragraph dummy = new Paragraph("\u00a0");
-        dummy.setLeading(TITLE_PADDING);
-        document.add(dummy);
+        addSpace(document);
 
         PdfPTable titleTable = new PdfPTable(new float[]{1f, 3f});
         titleTable.setWidthPercentage(100f);
-        getParagraph(titleTable, "Date", mTreeReport.getDate(), 0);
-        getParagraph(titleTable, "Reporting Employee", mTreeReport.getReportingEmployee(), 0);
+        getParagraph(titleTable, MobileRangerApplication.getAppContext().getString(R.string.form_date_title), mTreeReport.getDate(), 0);
+        getParagraph(titleTable, MobileRangerApplication.getAppContext().getString(R.string.form_reporting_employee_title), mTreeReport.getReportingEmployee(), 0);
         document.add(titleTable);
+        addSpace(document);
 
-        PdfPTable table = createTableForLocation();
+        if(mTreeReport.getLocations() != null && mTreeReport.getLocations().size() > 0) {
+            for (TreeLocation location : mTreeReport.getLocations()) {
+                PdfPTable table = createTableForLocation(location);
+                document.add(table);
+                document.newPage();
 
-        document.add(table);
-
+            }
+        }
     }
 
-    private PdfPTable createTableForLocation() throws DocumentException, IOException {
+    private void addSpace(Document document) throws DocumentException {
+        Paragraph dummy = new Paragraph("\u00a0");
+        dummy.setLeading(TITLE_PADDING);
+        document.add(dummy);
+    }
+
+    private PdfPTable createTableForLocation(TreeLocation location) throws DocumentException, IOException {
         PdfPTable table = new PdfPTable(new float[]{1f, 3f});
         table.setWidthPercentage(100f);
-
-
-        getParagraph(table, "Location", mTreeReport.getLocation(), 0);
-        getParagraph(table, "Details", mTreeReport.getDetails(), ROW_HEIGHT);
-        getParagraph(table, "Action Taken", mTreeReport.getActionTaken(), ROW_HEIGHT);
-        addImageRow(table, "Before Photo", "After Photo");
+        Context context = MobileRangerApplication.getAppContext();
+        getParagraph(table, context.getString(R.string.global_location), location.getLocation(), 0);
+        getParagraph(table, context.getString(R.string.form_details_title), location.getDetails(), ROW_HEIGHT);
+        getParagraph(table, context.getString(R.string.form_action_taken_title), location.getActionTaken(), ROW_HEIGHT);
+        addImageRow(table, context.getString(R.string.form_before_title), context.getString(R.string.form_after_title), location);
 
         return table;
     }
 
-    private void addImageRow(PdfPTable table, String beforeText, String afterText) throws DocumentException, IOException {
+    private void addImageRow(PdfPTable table, String beforeText, String afterText, TreeLocation location) throws DocumentException, IOException {
         PdfPTable innerTable = new PdfPTable(2);
         addImageTitle(innerTable, beforeText);
         addImageTitle(innerTable, afterText);
-        getImageCell(innerTable, mTreeReport.getBeforeImagePath());
-        getImageCell(innerTable, mTreeReport.getAfterImagePath());
+        getImageCell(innerTable, location.getBeforeImagePath());
+        getImageCell(innerTable, location.getAfterImagePath());
 
         PdfPCell cell = new PdfPCell(innerTable);
         cell.setColspan(2);
@@ -127,15 +137,12 @@ public class TreeReportWriter extends PdfWritable {
     }
 
     private void getImageCell(PdfPTable table, String imagePath) throws DocumentException, MalformedURLException , IOException {
-       // PdfPTable innerTable = new PdfPTable(1);
-        //innerTable.addCell(new Paragraph(header, boldFont));
         PdfPCell cell;
         if(imagePath != null && !imagePath.isEmpty()) {
             Image image = Image.getInstance(imagePath);
             image.scaleToFit(IMAGE_WIDTH, IMAGE_HEIGHT);
             cell = new PdfPCell(image);
             cell.setPadding(5);
-          //  innerTable.addCell(cell);
         } else {
             cell = new PdfPCell(new Phrase(""));
             cell.setMinimumHeight(50);

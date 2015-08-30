@@ -2,21 +2,32 @@ package gov.texas.tpwd.mobileranger.ui;
 
 import android.app.DatePickerDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.CursorAdapter;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.FilterQueryProvider;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 
@@ -25,7 +36,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
+import gov.texas.tpwd.mobileranger.AutoCompleteManager;
 import gov.texas.tpwd.mobileranger.R;
+import gov.texas.tpwd.mobileranger.TreeLocation;
 import gov.texas.tpwd.mobileranger.TreeReport;
 import gov.texas.tpwd.mobileranger.TreeReportWriter;
 import gov.texas.tpwd.mobileranger.pdf.PdfWritable;
@@ -33,10 +46,10 @@ import gov.texas.tpwd.mobileranger.pdf.PdfWritable;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int BEFORE_PHOTO_REQUEST_CODE = 1;
-    private static final int AFTER_PHOTO_REQUEST_CODE = 1;
+    protected static final int BEFORE_PHOTO_REQUEST_CODE = 1;
+    protected static final int AFTER_PHOTO_REQUEST_CODE = 1;
 
-    private EditText reportingEmployeeText;
+    private AutoCompleteTextView reportingEmployeeText;
     private EditText locationText;
     private EditText detailsText;
     private EditText actionTakenText;
@@ -46,6 +59,9 @@ public class MainActivity extends AppCompatActivity {
     private Button beforePhotoButton;
     private Button afterPhotoButton;
 
+    private RecyclerView recyclerView;
+    private TreeLocationAdapter adapter;
+
     private File beforePhotoFile;
     private File afterPhotoFile;
 
@@ -53,12 +69,18 @@ public class MainActivity extends AppCompatActivity {
 
     private DateFormat format = new SimpleDateFormat("MMMM d yyyy");
 
+    private AutoCompleteManager autoCompleteManager;
+    private EmployeeAutoCompleteAdapter employeeAutoCompleteAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         calendar = Calendar.getInstance();
+        autoCompleteManager = new AutoCompleteManager(getApplicationContext());
+        employeeAutoCompleteAdapter = new EmployeeAutoCompleteAdapter();
         bindViews();
+        setupRecyclerView();
     }
 
     private void bindViews() {
@@ -70,35 +92,17 @@ public class MainActivity extends AppCompatActivity {
                 newFragment.show(getSupportFragmentManager(), "datePicker");
             }
         });
-        reportingEmployeeText = (EditText) findViewById(R.id.reportingEmployeeEdit);
-        locationText = (EditText) findViewById(R.id.locationEdit);
-        detailsText = (EditText) findViewById(R.id.detailText);
-        actionTakenText = (EditText) findViewById(R.id.actionTakenText);
-        beforePhoto = (ImageView) findViewById(R.id.beforeImage);
-        afterPhoto = (ImageView) findViewById(R.id.afterImage);
-        beforePhotoButton = (Button) findViewById(R.id.buttonBefore);
-        beforePhotoButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                beforePhotoFile = startCamera(BEFORE_PHOTO_REQUEST_CODE);
-            }
-        });
-        afterPhotoButton = (Button) findViewById(R.id.buttonAfter);
-        afterPhotoButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                afterPhotoFile = startCamera(AFTER_PHOTO_REQUEST_CODE);
-            }
-        });
+        reportingEmployeeText = (AutoCompleteTextView) findViewById(R.id.reportingEmployeeEdit);
+        reportingEmployeeText.setAdapter(employeeAutoCompleteAdapter);
+        reportingEmployeeText.setThreshold(2);
+
     }
 
-    private File startCamera(int requestCode) {
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        String path = getExternalFilesDir(Environment.DIRECTORY_PICTURES).getAbsolutePath() + "/" + System.currentTimeMillis() + ".png";
-        File file = new File(path);
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(file));
-        startActivityForResult(intent, requestCode);
-        return file;
+    private void setupRecyclerView() {
+        recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new TreeLocationAdapter(this,1);
+        recyclerView.setAdapter(adapter);
     }
 
     private final static String DATE_BUTTON_TEXT = "DateButtonText";
@@ -111,8 +115,6 @@ public class MainActivity extends AppCompatActivity {
         if(!dateButton.getText().equals(getString(R.string.button_date_picker))) {
             outState.putString(DATE_BUTTON_TEXT, dateButton.getText().toString());
         }
-        outState.putSerializable(BEFORE_PHOTO_PATH, beforePhotoFile);
-        outState.putSerializable(AFTER_PHOTO_PATH, afterPhotoFile);
 
     }
 
@@ -122,10 +124,6 @@ public class MainActivity extends AppCompatActivity {
         if(savedInstanceState.containsKey(DATE_BUTTON_TEXT) && dateButton != null) {
             dateButton.setText(savedInstanceState.getString(DATE_BUTTON_TEXT));
         }
-        beforePhotoFile = (File) savedInstanceState.getSerializable(BEFORE_PHOTO_PATH);
-        afterPhotoFile = (File) savedInstanceState.getSerializable(AFTER_PHOTO_PATH);
-        loadBeforeImage();
-        loadAfterImage();
     }
 
     private TreeReport getTreeReport() {
@@ -134,32 +132,37 @@ public class MainActivity extends AppCompatActivity {
             treeReport.setDate(dateButton.getText().toString());
         }
         treeReport.setReportingEmployee(reportingEmployeeText.getText().toString());
-        treeReport.setLocation(locationText.getText().toString());
-        treeReport.setDetails(detailsText.getText().toString());
-        treeReport.setActionTaken(actionTakenText.getText().toString());
 
-        if (beforePhotoFile != null) {
-            treeReport.setBeforeImagePath(beforePhotoFile.getAbsolutePath());
-        }
-
-        if (afterPhotoFile != null) {
-            treeReport.setAfterImagePath(afterPhotoFile.getAbsolutePath());
-        }
+        treeReport.setLocations(adapter.getTreeLocations());
+//
+//        TreeLocation location = new TreeLocation();
+//        location.setLocation(locationText.getText().toString());
+//        location.setDetails(detailsText.getText().toString());
+//        location.setActionTaken(actionTakenText.getText().toString());
+//
+//        if (beforePhotoFile != null) {
+//            location.setBeforeImagePath(beforePhotoFile.getAbsolutePath());
+//        }
+//
+//        if (afterPhotoFile != null) {
+//            location.setAfterImagePath(afterPhotoFile.getAbsolutePath());
+//        }
+//        treeReport.addLocation(location);
 
         return treeReport;
     }
 
-    private void loadBeforeImage() {
-        if(beforePhotoFile != null && beforePhoto != null) {
-            Glide.with(this).load(beforePhotoFile).into(beforePhoto);
-        }
-    }
-
-    private void loadAfterImage() {
-        if(afterPhotoFile != null && afterPhoto != null) {
-            Glide.with(this).load(afterPhotoFile).into(afterPhoto);
-        }
-    }
+//    private void loadBeforeImage() {
+//        if(beforePhotoFile != null && beforePhoto != null) {
+//            Glide.with(this).load(beforePhotoFile).into(beforePhoto);
+//        }
+//    }
+//
+//    private void loadAfterImage() {
+//        if(afterPhotoFile != null && afterPhoto != null) {
+//            Glide.with(this).load(afterPhotoFile).into(afterPhoto);
+//        }
+//    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -167,13 +170,12 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK) {
             Log.d("MainActivity", "result ok");
             // Image captured and saved to fileUri specified in the Intent
-
                 if (requestCode == BEFORE_PHOTO_REQUEST_CODE) {
-                    loadBeforeImage();
+                    adapter.updateBeforeImage();
+                   // loadBeforeImage();
                 } else if (requestCode == AFTER_PHOTO_REQUEST_CODE) {
-                    loadAfterImage();
-                } else {
-                    Log.d("MainActivity", "request code doesn't match");
+                    adapter.updateAfterImage();
+                    //loadAfterImage();
                 }
 
 
@@ -188,8 +190,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        menu.add(Menu.NONE, 0, Menu.NONE, "Share").setIcon(R.drawable.ic_share_white_24dp)
-        .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        menu.add(Menu.NONE, 0, Menu.NONE, "Share").setIcon(R.drawable.ic_share_white_24dp).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        menu.add(Menu.NONE, 1, Menu.NONE, "Add") .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+
         return true;
     }
 
@@ -208,12 +211,23 @@ public class MainActivity extends AppCompatActivity {
             shareIntent.setType("application/pdf");
             startActivity(Intent.createChooser(shareIntent, "Share PDF"));
             return true;
+        } else if(item.getItemId() == 1) {
+            adapter.incrementSize();
         }
 
         return super.onOptionsItemSelected(item);
     }
 
-    private class DatePickerFragment extends DialogFragment
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (!TextUtils.isEmpty(reportingEmployeeText.getText())) {
+            autoCompleteManager.createOrUpdateAsync("employee", reportingEmployeeText.getText().toString());
+        }
+
+    }
+
+    public class DatePickerFragment extends DialogFragment
             implements DatePickerDialog.OnDateSetListener {
 
         @Override
@@ -234,4 +248,36 @@ public class MainActivity extends AppCompatActivity {
             dateButton.setText(format.format(calendar.getTime()));
         }
     }
-}
+
+    private class EmployeeAutoCompleteAdapter extends CursorAdapter {
+        private LayoutInflater inflater;
+
+        public EmployeeAutoCompleteAdapter() {
+            super(MainActivity.this, null, 0);
+            this.inflater = LayoutInflater.from(MainActivity.this);
+        }
+
+        @Override
+        public View newView(Context context, Cursor cursor, ViewGroup parent) {
+            TextView textView = (TextView) inflater.inflate(android.R.layout.simple_dropdown_item_1line, parent, false);
+            return textView;
+        }
+
+        @Override
+        public void bindView(View view, Context context, Cursor cursor) {
+            TextView textView = (TextView) view;
+            textView.setText(cursor.getString(1));
+        }
+
+        @Override
+        public Cursor runQueryOnBackgroundThread(CharSequence constraint) {
+            Log.d("####", "query " + constraint);
+            return autoCompleteManager.getValuesCursor("employee", constraint != null ? constraint.toString() : null);
+        }
+
+        @Override
+        public CharSequence convertToString(Cursor cursor) {
+            return cursor.getString(1);
+        }
+    }
+ }

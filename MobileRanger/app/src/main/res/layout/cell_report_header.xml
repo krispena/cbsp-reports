@@ -38,7 +38,7 @@
             android:layout_height="wrap_content"
             android:text="@string/form_reporting_employee_title" />
 
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/reportingEmployeeEdit"
             android:layout_marginLeft="10dp"
             android:layout_width="match_parent"
