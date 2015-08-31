@@ -4,8 +4,11 @@ package gov.texas.tpwd.mobileranger;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.realm.RealmObject;
+
 public class TreeReport {
 
+    private long id;
     private String mDate;
     private String mReportingEmployee;
     private List<TreeLocation> locations;
@@ -39,5 +42,13 @@ public class TreeReport {
             locations = new ArrayList<TreeLocation>();
         }
         locations.add(location);
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 }

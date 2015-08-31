@@ -4,6 +4,7 @@ package gov.texas.tpwd.mobileranger.ui;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -11,6 +12,7 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +35,7 @@ public class TreeLocationAdapter extends RecyclerView.Adapter<TreeLocationAdapte
     private List<TreeLocation> treeLocations;
     private Activity context;
     private int cameraRequestPosition = -1;
+    private SparseArray<LocationHolder> visibleLocations;
 
     public TreeLocationAdapter(Activity context, int size) {
         this.size = size;
@@ -41,15 +44,20 @@ public class TreeLocationAdapter extends RecyclerView.Adapter<TreeLocationAdapte
         for(int i = 0; i < size; i++) {
             treeLocations.add(new TreeLocation());
         }
+        visibleLocations = new SparseArray<LocationHolder>();
     }
 
     public List<TreeLocation> getTreeLocations() {
         return treeLocations;
     }
 
+    public void setTreeLocations(List<TreeLocation> locations) {
+        this.treeLocations = locations;
+        notifyDataSetChanged();
+    }
+
     @Override
     public LocationHolder onCreateViewHolder(ViewGroup parent, int i) {
-        Log.d("Adapter", "create view holder location " + i);
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.row_tree_report, parent, false);
         LocationHolder holder = new LocationHolder(view);
         holder.locationEditText = (EditText) view.findViewById(R.id.locationEdit);
@@ -66,6 +74,7 @@ public class TreeLocationAdapter extends RecyclerView.Adapter<TreeLocationAdapte
     public void onBindViewHolder(LocationHolder locationHolder, final int position) {
         final TreeLocation treeLocation = treeLocations.get(position);
         locationHolder.treeLocation = treeLocation;
+        locationHolder.position = position;
         locationHolder.locationEditText.setText(treeLocation.getLocation());
         locationHolder.detailsEditText.setText(treeLocation.getDetails());
         locationHolder.actionTakenEditText.setText(treeLocation.getActionTaken());
@@ -84,7 +93,7 @@ public class TreeLocationAdapter extends RecyclerView.Adapter<TreeLocationAdapte
                 treeLocation.setAfterImagePath(startCamera(MainActivity.AFTER_PHOTO_REQUEST_CODE, position).getAbsolutePath());
             }
         });
-
+        visibleLocations.put(position, locationHolder);
     }
 
     private File startCamera(int requestCode, int position) {
@@ -109,10 +118,20 @@ public class TreeLocationAdapter extends RecyclerView.Adapter<TreeLocationAdapte
     @Override
     public void onViewRecycled(LocationHolder holder) {
         super.onViewRecycled(holder);
+        saveHolderData(holder);
+        visibleLocations.remove(holder.position);
+    }
+
+    public void onPause() {
+        for(int i=0; i < visibleLocations.size(); i++) {
+            saveHolderData(visibleLocations.get(visibleLocations.keyAt(i)));
+        }
+    }
+
+    public void saveHolderData(LocationHolder holder) {
         holder.treeLocation.setLocation(holder.locationEditText.getText().toString());
         holder.treeLocation.setDetails(holder.detailsEditText.getText().toString());
         holder.treeLocation.setActionTaken(holder.actionTakenEditText.getText().toString());
-
     }
 
     @Override
@@ -135,6 +154,7 @@ public class TreeLocationAdapter extends RecyclerView.Adapter<TreeLocationAdapte
         Button beforeButton;
         ImageView afterImageView;
         Button afterButton;
+        int position;
 
         public LocationHolder(View itemView) {
             super(itemView);

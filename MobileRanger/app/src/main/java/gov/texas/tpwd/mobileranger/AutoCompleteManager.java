@@ -11,9 +11,6 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
-/**
- * Created by kris on 7/4/15.
- */
 public class AutoCompleteManager {
 
     private static final String TABLE_TEXT = "text";

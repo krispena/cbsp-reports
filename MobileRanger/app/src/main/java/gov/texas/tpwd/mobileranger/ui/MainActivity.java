@@ -40,30 +40,22 @@ import gov.texas.tpwd.mobileranger.AutoCompleteManager;
 import gov.texas.tpwd.mobileranger.R;
 import gov.texas.tpwd.mobileranger.TreeLocation;
 import gov.texas.tpwd.mobileranger.TreeReport;
+import gov.texas.tpwd.mobileranger.TreeReportManager;
 import gov.texas.tpwd.mobileranger.TreeReportWriter;
 import gov.texas.tpwd.mobileranger.pdf.PdfWritable;
 
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = MainActivity.class.getSimpleName();
     protected static final int BEFORE_PHOTO_REQUEST_CODE = 1;
     protected static final int AFTER_PHOTO_REQUEST_CODE = 1;
 
     private AutoCompleteTextView reportingEmployeeText;
-    private EditText locationText;
-    private EditText detailsText;
-    private EditText actionTakenText;
-    private ImageView beforePhoto;
-    private ImageView afterPhoto;
     private Button dateButton;
-    private Button beforePhotoButton;
-    private Button afterPhotoButton;
 
     private RecyclerView recyclerView;
     private TreeLocationAdapter adapter;
-
-    private File beforePhotoFile;
-    private File afterPhotoFile;
 
     private Calendar calendar;
 
@@ -72,6 +64,9 @@ public class MainActivity extends AppCompatActivity {
     private AutoCompleteManager autoCompleteManager;
     private EmployeeAutoCompleteAdapter employeeAutoCompleteAdapter;
 
+    private TreeReport treeReport;
+    private TreeReportManager treeReportManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -79,8 +74,8 @@ public class MainActivity extends AppCompatActivity {
         calendar = Calendar.getInstance();
         autoCompleteManager = new AutoCompleteManager(getApplicationContext());
         employeeAutoCompleteAdapter = new EmployeeAutoCompleteAdapter();
+        treeReportManager = new TreeReportManager(this);
         bindViews();
-        setupRecyclerView();
     }
 
     private void bindViews() {
@@ -98,16 +93,14 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void setupRecyclerView() {
+    private void setupRecyclerView(int size) {
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new TreeLocationAdapter(this,1);
+        adapter = new TreeLocationAdapter(this, size);
         recyclerView.setAdapter(adapter);
     }
 
     private final static String DATE_BUTTON_TEXT = "DateButtonText";
-    private final static String BEFORE_PHOTO_PATH = "BeforePhotoPath";
-    private final static String AFTER_PHOTO_PATH = "AfterPhotoPath";
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -126,43 +119,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private TreeReport getTreeReport() {
-        TreeReport treeReport = new TreeReport();
+    private TreeReport updateTreeReportFromUi() {
         if(!dateButton.getText().equals(getString(R.string.button_date_picker))) {
             treeReport.setDate(dateButton.getText().toString());
         }
         treeReport.setReportingEmployee(reportingEmployeeText.getText().toString());
 
         treeReport.setLocations(adapter.getTreeLocations());
-//
-//        TreeLocation location = new TreeLocation();
-//        location.setLocation(locationText.getText().toString());
-//        location.setDetails(detailsText.getText().toString());
-//        location.setActionTaken(actionTakenText.getText().toString());
-//
-//        if (beforePhotoFile != null) {
-//            location.setBeforeImagePath(beforePhotoFile.getAbsolutePath());
-//        }
-//
-//        if (afterPhotoFile != null) {
-//            location.setAfterImagePath(afterPhotoFile.getAbsolutePath());
-//        }
-//        treeReport.addLocation(location);
 
         return treeReport;
     }
-
-//    private void loadBeforeImage() {
-//        if(beforePhotoFile != null && beforePhoto != null) {
-//            Glide.with(this).load(beforePhotoFile).into(beforePhoto);
-//        }
-//    }
-//
-//    private void loadAfterImage() {
-//        if(afterPhotoFile != null && afterPhoto != null) {
-//            Glide.with(this).load(afterPhotoFile).into(afterPhoto);
-//        }
-//    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -172,10 +138,8 @@ public class MainActivity extends AppCompatActivity {
             // Image captured and saved to fileUri specified in the Intent
                 if (requestCode == BEFORE_PHOTO_REQUEST_CODE) {
                     adapter.updateBeforeImage();
-                   // loadBeforeImage();
                 } else if (requestCode == AFTER_PHOTO_REQUEST_CODE) {
                     adapter.updateAfterImage();
-                    //loadAfterImage();
                 }
 
 
@@ -190,8 +154,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        menu.add(Menu.NONE, 0, Menu.NONE, "Share").setIcon(R.drawable.ic_share_white_24dp).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-        menu.add(Menu.NONE, 1, Menu.NONE, "Add") .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        menu.add(Menu.NONE, 0, Menu.NONE, "Share")
+                .setIcon(R.drawable.ic_share_white_24dp)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+
+        menu.add(Menu.NONE, 1, Menu.NONE, "Add")
+                .setIcon(R.drawable.ic_add_white_24dp)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
 
         return true;
     }
@@ -199,11 +168,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == 0) {
-            TreeReport report = getTreeReport();
             getExternalFilesDir("dfs");
             File externalDir = Environment.getExternalStorageDirectory();
             String filePath = externalDir.getAbsolutePath() + "/" + "pdf_" + System.currentTimeMillis() + ".pdf";
-            PdfWritable treeReportWriter = new TreeReportWriter(report, filePath, getString(R.string.pdf_title));
+            PdfWritable treeReportWriter = new TreeReportWriter(treeReport, filePath, getString(R.string.pdf_title));
             treeReportWriter.write();
             Intent shareIntent = new Intent();
             shareIntent.setAction(Intent.ACTION_SEND);
@@ -224,6 +192,38 @@ public class MainActivity extends AppCompatActivity {
         if (!TextUtils.isEmpty(reportingEmployeeText.getText())) {
             autoCompleteManager.createOrUpdateAsync("employee", reportingEmployeeText.getText().toString());
         }
+        adapter.onPause();
+        updateTreeReportFromUi();
+        treeReportManager.insertOrUpdateTreeReport(treeReport);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if(treeReport == null) {
+            treeReport = treeReportManager.getTreeReport();
+
+            int locationSize = 1;
+            boolean haveLocations = false;
+            if(treeReport.getLocations() != null && treeReport.getLocations().size() > 0) {
+                locationSize = treeReport.getLocations().size();
+                haveLocations = true;
+            }
+            setupRecyclerView(locationSize);
+            if(haveLocations) {
+                adapter.setTreeLocations(treeReport.getLocations());
+            }
+
+            if(treeReport.getDate() != null) {
+                dateButton.setText(treeReport.getDate());
+            }
+
+            if(treeReport.getReportingEmployee() != null) {
+                reportingEmployeeText.setText(treeReport.getReportingEmployee());
+            }
+        }
+
 
     }
 
@@ -245,7 +245,9 @@ public class MainActivity extends AppCompatActivity {
             calendar.set(Calendar.YEAR, year);
             calendar.set(Calendar.MONTH, month);
             calendar.set(Calendar.DAY_OF_MONTH, day);
-            dateButton.setText(format.format(calendar.getTime()));
+            String date = format.format(calendar.getTime());
+            dateButton.setText(date);
+            treeReport.setDate(date);
         }
     }
 

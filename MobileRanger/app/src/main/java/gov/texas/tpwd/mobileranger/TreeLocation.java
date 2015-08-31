@@ -1,15 +1,35 @@
 package gov.texas.tpwd.mobileranger;
 
+import io.realm.RealmObject;
+
 /**
  * Created by kris on 7/4/15.
  */
 public class TreeLocation {
 
+    private long id;
+    private long treeReportId;
     private String mLocation;
     private String mDetails;
     private String mActionTaken;
     private String mBeforeImagePath;
     private String mAfterImagePath;
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public long getTreeReportId() {
+        return treeReportId;
+    }
+
+    public void setTreeReportId(long treeReportId) {
+        this.treeReportId = treeReportId;
+    }
 
     public String getLocation() {
         return mLocation;
