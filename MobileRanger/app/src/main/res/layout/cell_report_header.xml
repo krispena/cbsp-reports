@@ -3,12 +3,15 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:gravity="center_vertical"
+    android:layout_marginLeft="@dimen/activity_horizontal_margin"
+    android:layout_marginRight="@dimen/activity_horizontal_margin"
+    android:orientation="horizontal">
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
+        android:layout_weight="1"
         android:orientation="horizontal">
 
         <TextView
@@ -27,8 +30,10 @@
     </LinearLayout>
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
+        android:layout_weight="2"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
         android:gravity="center_vertical">
 
 
@@ -36,13 +41,18 @@
             android:id="@+id/reportingEmployeeTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
             android:text="@string/form_reporting_employee_title" />
 
         <AutoCompleteTextView
             android:id="@+id/reportingEmployeeEdit"
             android:layout_marginLeft="10dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:lines="1"
+            android:imeOptions="actionNext"
+            android:inputType="textCapWords"/>
 
     </LinearLayout>
 </LinearLayout>

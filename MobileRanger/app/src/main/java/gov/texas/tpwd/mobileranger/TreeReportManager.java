@@ -146,15 +146,15 @@ public class TreeReportManager {
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            Log.d(TAG, "onCreate database");
             onUpgrade(db, 0, VERSION);
         }
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            Log.d(TAG, "onUpgrade database");
-            db.execSQL("CREATE TABLE TreeLocation (_id INTEGER PRIMARY KEY, tree_report_id INTEGER, location TEXT, details TEXT, action_taken TEXT, before_image_path TEXT, after_image_path TEXT);");
-            db.execSQL("CREATE TABLE TreeReport (_id INTEGER PRIMARY KEY, date TEXT, reporting_employee TEXT);");
+            if(oldVersion < 1) {
+                db.execSQL("CREATE TABLE TreeLocation (_id INTEGER PRIMARY KEY, tree_report_id INTEGER, location TEXT, details TEXT, action_taken TEXT, before_image_path TEXT, after_image_path TEXT);");
+                db.execSQL("CREATE TABLE TreeReport (_id INTEGER PRIMARY KEY, date TEXT, reporting_employee TEXT);");
+            }
         }
     }
 

@@ -155,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         menu.add(Menu.NONE, 0, Menu.NONE, "Share")
-                .setIcon(R.drawable.ic_share_white_24dp)
+                .setIcon(R.drawable.ic_picture_as_pdf_white_24dp)
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
 
         menu.add(Menu.NONE, 1, Menu.NONE, "Add")
