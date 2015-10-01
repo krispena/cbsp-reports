@@ -2,6 +2,12 @@ package gov.texas.tpwd.mobileranger;
 
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.graphics.RectF;
+import android.media.ExifInterface;
+import android.util.Log;
 
 import com.itextpdf.text.Chunk;
 import com.itextpdf.text.Document;
@@ -14,7 +20,11 @@ import com.itextpdf.text.Phrase;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 
 import gov.texas.tpwd.mobileranger.pdf.PdfWritable;
@@ -139,7 +149,17 @@ public class TreeReportWriter extends PdfWritable {
     private void getImageCell(PdfPTable table, String imagePath) throws DocumentException, MalformedURLException , IOException {
         PdfPCell cell;
         if(imagePath != null && !imagePath.isEmpty()) {
-            Image image = Image.getInstance(imagePath);
+            byte[] scaled = getScaledBitmap(imagePath);
+            if(scaled == null) {
+                Log.d("TreeReportWriter", "ERROR SCALING BITMAP");
+                return;
+            }
+
+            Image image = Image.getInstance(scaled);
+            ExifInterface exif = new ExifInterface(imagePath);
+            int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            image.setInitialRotation((float)exifToRadians(rotation));
+
             image.scaleToFit(IMAGE_WIDTH, IMAGE_HEIGHT);
             cell = new PdfPCell(image);
             cell.setPadding(5);
@@ -150,6 +170,66 @@ public class TreeReportWriter extends PdfWritable {
         }
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
         table.addCell(cell);
+    }
+
+    private double exifToRadians(int exifOrientation) {
+        if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_90) { return Math.toRadians(270); }
+        else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_180) {  return Math.toRadians(180); }
+        else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_270) {  return Math.toRadians(90); }
+        return 0;
+    }
+
+    private static final int SAMPLE_MULTIPLIER = 3;
+    private static final int SAMPLE_DEST_WIDTH = IMAGE_WIDTH * SAMPLE_MULTIPLIER;
+    private static final int SAMPLE_DEST_HEIGHT = IMAGE_HEIGHT * SAMPLE_MULTIPLIER;
+
+    private byte[] getScaledBitmap(String pathOfInputImage) {
+        try
+        {
+            int inWidth = 0;
+            int inHeight = 0;
+
+            InputStream in = new FileInputStream(pathOfInputImage);
+
+            // decode image size (decode metadata only, not the whole image)
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(in, null, options);
+            in.close();
+            in = null;
+
+            // save width and height
+            inWidth = options.outWidth;
+            inHeight = options.outHeight;
+
+            // decode full image pre-resized
+            in = new FileInputStream(pathOfInputImage);
+            options = new BitmapFactory.Options();
+            // calc rought re-size (this is no exact resize)
+            options.inSampleSize = Math.max(inWidth/SAMPLE_DEST_WIDTH, inHeight/SAMPLE_DEST_HEIGHT);
+            // decode full image
+            Bitmap roughBitmap = BitmapFactory.decodeStream(in, null, options);
+            // calc exact destination size
+            Matrix m = new Matrix();
+            RectF inRect = new RectF(0, 0, roughBitmap.getWidth(), roughBitmap.getHeight());
+            RectF outRect = new RectF(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
+            m.setRectToRect(inRect, outRect, Matrix.ScaleToFit.CENTER);
+            float[] values = new float[9];
+            m.getValues(values);
+
+            // resize bitmap
+            Bitmap resizedBitmap = Bitmap.createScaledBitmap(roughBitmap, (int) (roughBitmap.getWidth() * values[0]), (int) (roughBitmap.getHeight() * values[4]), true);
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            resizedBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+            byte[] byteArray = stream.toByteArray();
+            // save image
+           return byteArray;
+        }
+        catch (IOException e)
+        {
+            Log.e("Image", e.getMessage(), e);
+        }
+        return null;
     }
 
     private Paragraph createTitleParagraph() {
