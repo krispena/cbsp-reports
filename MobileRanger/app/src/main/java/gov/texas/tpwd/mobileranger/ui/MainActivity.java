@@ -2,13 +2,14 @@ package gov.texas.tpwd.mobileranger.ui;
 
 import android.app.DatePickerDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -24,12 +25,8 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.CursorAdapter;
 import android.widget.DatePicker;
-import android.widget.EditText;
-import android.widget.FilterQueryProvider;
-import android.widget.ImageView;
 import android.widget.TextView;
-
-import com.bumptech.glide.Glide;
+import android.widget.Toast;
 
 import java.io.File;
 import java.text.DateFormat;
@@ -38,7 +35,6 @@ import java.util.Calendar;
 
 import gov.texas.tpwd.mobileranger.AutoCompleteManager;
 import gov.texas.tpwd.mobileranger.R;
-import gov.texas.tpwd.mobileranger.TreeLocation;
 import gov.texas.tpwd.mobileranger.TreeReport;
 import gov.texas.tpwd.mobileranger.TreeReportManager;
 import gov.texas.tpwd.mobileranger.TreeReportWriter;
@@ -168,22 +164,30 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == 0) {
-            getExternalFilesDir("dfs");
-            File externalDir = Environment.getExternalStorageDirectory();
-            String filePath = externalDir.getAbsolutePath() + "/" + "pdf_" + System.currentTimeMillis() + ".pdf";
-            PdfWritable treeReportWriter = new TreeReportWriter(treeReport, filePath, getString(R.string.pdf_title));
-            treeReportWriter.write();
-            Intent shareIntent = new Intent();
-            shareIntent.setAction(Intent.ACTION_SEND);
-            shareIntent.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + filePath));
-            shareIntent.setType("application/pdf");
-            startActivity(Intent.createChooser(shareIntent, "Share PDF"));
+            (new GeneratePdfTask()).execute();
             return true;
         } else if(item.getItemId() == 1) {
             adapter.incrementSize();
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private String generatePdf() {
+        getExternalFilesDir("dfs");
+        File externalDir = Environment.getExternalStorageDirectory();
+        String filePath = externalDir.getAbsolutePath() + "/" + "pdf_" + System.currentTimeMillis() + ".pdf";
+        PdfWritable treeReportWriter = new TreeReportWriter(treeReport, filePath, getString(R.string.pdf_title));
+        treeReportWriter.write();
+        return filePath;
+    }
+
+    private void onPdfGenerated(String filePath) {
+        Intent shareIntent = new Intent();
+        shareIntent.setAction(Intent.ACTION_SEND);
+        shareIntent.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + filePath));
+        shareIntent.setType("application/pdf");
+        startActivity(Intent.createChooser(shareIntent, "Share PDF"));
     }
 
     @Override
@@ -223,7 +227,6 @@ public class MainActivity extends AppCompatActivity {
                 reportingEmployeeText.setText(treeReport.getReportingEmployee());
             }
         }
-
 
     }
 
@@ -280,6 +283,34 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public CharSequence convertToString(Cursor cursor) {
             return cursor.getString(1);
+        }
+    }
+
+    private class GeneratePdfTask extends AsyncTask<Void, Void, String> {
+
+        ProgressDialog dialog;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            dialog = ProgressDialog.show(MainActivity.this, "",
+                    "Generating PDF", true, false);
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            return generatePdf();
+        }
+
+        @Override
+        protected void onPostExecute(String filePath) {
+            super.onPostExecute(filePath);
+            dialog.dismiss();
+            if(filePath != null) {
+                onPdfGenerated(filePath);
+            } else {
+                Toast.makeText(MainActivity.this, "There was a problem generating your PDF", Toast.LENGTH_LONG).show();
+            }
         }
     }
  }
