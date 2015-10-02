@@ -4,8 +4,6 @@ package gov.texas.tpwd.mobileranger;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
-import android.graphics.RectF;
 import android.media.ExifInterface;
 import android.util.Log;
 
@@ -22,7 +20,6 @@ import com.itextpdf.text.pdf.PdfPTable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -203,24 +200,25 @@ public class TreeReportWriter extends PdfWritable {
             inHeight = options.outHeight;
 
             // decode full image pre-resized
+            options.inJustDecodeBounds = false;
             in = new FileInputStream(pathOfInputImage);
-            options = new BitmapFactory.Options();
+            //options = new BitmapFactory.Options();
             // calc rought re-size (this is no exact resize)
-            options.inSampleSize = Math.max(inWidth/SAMPLE_DEST_WIDTH, inHeight/SAMPLE_DEST_HEIGHT);
+            options.inSampleSize = calculateInSampleSize(options, IMAGE_WIDTH,IMAGE_HEIGHT);
             // decode full image
             Bitmap roughBitmap = BitmapFactory.decodeStream(in, null, options);
             // calc exact destination size
-            Matrix m = new Matrix();
-            RectF inRect = new RectF(0, 0, roughBitmap.getWidth(), roughBitmap.getHeight());
-            RectF outRect = new RectF(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
-            m.setRectToRect(inRect, outRect, Matrix.ScaleToFit.CENTER);
-            float[] values = new float[9];
-            m.getValues(values);
+//            Matrix m = new Matrix();
+//            RectF inRect = new RectF(0, 0, roughBitmap.getWidth(), roughBitmap.getHeight());
+//            RectF outRect = new RectF(0, 0, roughBitmap.getWidth() / 2, roughBitmap.getHeight() / 2);
+//            m.setRectToRect(inRect, outRect, Matrix.ScaleToFit.CENTER);
+//            float[] values = new float[9];
+//            m.getValues(values);
 
             // resize bitmap
-            Bitmap resizedBitmap = Bitmap.createScaledBitmap(roughBitmap, (int) (roughBitmap.getWidth() * values[0]), (int) (roughBitmap.getHeight() * values[4]), true);
+           // Bitmap resizedBitmap = Bitmap.createScaledBitmap(roughBitmap, (int) (roughBitmap.getWidth() * values[0]), (int) (roughBitmap.getHeight() * values[4]), true);
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            resizedBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+            roughBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
             byte[] byteArray = stream.toByteArray();
             // save image
            return byteArray;
@@ -230,6 +228,29 @@ public class TreeReportWriter extends PdfWritable {
             Log.e("Image", e.getMessage(), e);
         }
         return null;
+    }
+
+    public static int calculateInSampleSize(
+            BitmapFactory.Options options, int reqWidth, int reqHeight) {
+        // Raw height and width of image
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+
+        if (height > reqHeight || width > reqWidth) {
+
+            final int halfHeight = height / 2;
+            final int halfWidth = width / 2;
+
+            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+            // height and width larger than the requested height and width.
+            while ((halfHeight / inSampleSize) > reqHeight
+                    && (halfWidth / inSampleSize) > reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+
+        return inSampleSize;
     }
 
     private Paragraph createTitleParagraph() {
