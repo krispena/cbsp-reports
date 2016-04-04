@@ -1,4 +1,4 @@
-package gov.texas.tpwd.mobileranger;
+package gov.texas.tpwd.mobileranger.report.data;
 
 import io.realm.RealmObject;
 

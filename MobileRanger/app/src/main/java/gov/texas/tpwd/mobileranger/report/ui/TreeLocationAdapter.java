@@ -1,17 +1,12 @@
-package gov.texas.tpwd.mobileranger.ui;
+package gov.texas.tpwd.mobileranger.report.ui;
 
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.location.Location;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.widget.RecyclerView;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import gov.texas.tpwd.mobileranger.R;
-import gov.texas.tpwd.mobileranger.TreeLocation;
+import gov.texas.tpwd.mobileranger.report.data.TreeLocation;
 
 public class TreeLocationAdapter extends RecyclerView.Adapter<TreeLocationAdapter.LocationHolder> {
 

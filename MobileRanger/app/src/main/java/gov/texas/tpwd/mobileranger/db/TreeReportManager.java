@@ -1,4 +1,4 @@
-package gov.texas.tpwd.mobileranger;
+package gov.texas.tpwd.mobileranger.db;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -6,10 +6,11 @@ import android.database.Cursor;
 import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.os.AsyncTask;
-import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
+
+import gov.texas.tpwd.mobileranger.report.data.TreeLocation;
+import gov.texas.tpwd.mobileranger.report.data.TreeReport;
 
 public class TreeReportManager {
 

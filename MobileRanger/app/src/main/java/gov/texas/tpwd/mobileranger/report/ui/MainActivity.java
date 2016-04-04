@@ -1,4 +1,4 @@
-package gov.texas.tpwd.mobileranger.ui;
+package gov.texas.tpwd.mobileranger.report.ui;
 
 import android.app.DatePickerDialog;
 import android.app.Dialog;
@@ -35,9 +35,9 @@ import java.util.Calendar;
 
 import gov.texas.tpwd.mobileranger.AutoCompleteManager;
 import gov.texas.tpwd.mobileranger.R;
-import gov.texas.tpwd.mobileranger.TreeReport;
-import gov.texas.tpwd.mobileranger.TreeReportManager;
-import gov.texas.tpwd.mobileranger.TreeReportWriter;
+import gov.texas.tpwd.mobileranger.report.data.TreeReport;
+import gov.texas.tpwd.mobileranger.db.TreeReportManager;
+import gov.texas.tpwd.mobileranger.report.writer.TreeReportWriter;
 import gov.texas.tpwd.mobileranger.pdf.PdfWritable;
 
 

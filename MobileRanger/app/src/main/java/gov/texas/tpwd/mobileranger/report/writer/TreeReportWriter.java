@@ -1,4 +1,4 @@
-package gov.texas.tpwd.mobileranger;
+package gov.texas.tpwd.mobileranger.report.writer;
 
 
 import android.content.Context;
@@ -24,6 +24,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 
+import gov.texas.tpwd.mobileranger.MobileRangerApplication;
+import gov.texas.tpwd.mobileranger.R;
+import gov.texas.tpwd.mobileranger.report.data.TreeLocation;
+import gov.texas.tpwd.mobileranger.report.data.TreeReport;
 import gov.texas.tpwd.mobileranger.pdf.PdfWritable;
 
 public class TreeReportWriter extends PdfWritable {

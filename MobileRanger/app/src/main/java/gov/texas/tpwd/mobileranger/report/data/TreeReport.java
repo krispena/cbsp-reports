@@ -1,10 +1,8 @@
-package gov.texas.tpwd.mobileranger;
+package gov.texas.tpwd.mobileranger.report.data;
 
 
 import java.util.ArrayList;
 import java.util.List;
-
-import io.realm.RealmObject;
 
 public class TreeReport {
 
