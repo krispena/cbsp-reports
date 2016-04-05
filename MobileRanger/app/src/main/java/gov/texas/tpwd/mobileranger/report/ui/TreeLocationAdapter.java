@@ -53,7 +53,7 @@ public class TreeLocationAdapter extends RecyclerView.Adapter<TreeLocationAdapte
 
     @Override
     public LocationHolder onCreateViewHolder(ViewGroup parent, int i) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.row_tree_report, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.row_tree_location, parent, false);
         LocationHolder holder = new LocationHolder(view);
         holder.locationEditText = (EditText) view.findViewById(R.id.locationEdit);
         holder.detailsEditText = (EditText) view.findViewById(R.id.detailText);
@@ -79,13 +79,13 @@ public class TreeLocationAdapter extends RecyclerView.Adapter<TreeLocationAdapte
         locationHolder.beforeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                treeLocation.setBeforeImagePath(startCamera(MainActivity.BEFORE_PHOTO_REQUEST_CODE, position).getAbsolutePath());
+                treeLocation.setBeforeImagePath(startCamera(ReportActivity.BEFORE_PHOTO_REQUEST_CODE, position).getAbsolutePath());
             }
         });
         locationHolder.afterButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                treeLocation.setAfterImagePath(startCamera(MainActivity.AFTER_PHOTO_REQUEST_CODE, position).getAbsolutePath());
+                treeLocation.setAfterImagePath(startCamera(ReportActivity.AFTER_PHOTO_REQUEST_CODE, position).getAbsolutePath());
             }
         });
         visibleLocations.put(position, locationHolder);

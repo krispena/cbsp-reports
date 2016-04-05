@@ -4,6 +4,7 @@ import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -11,6 +12,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.DialogFragment;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -35,17 +37,18 @@ import java.util.Calendar;
 
 import gov.texas.tpwd.mobileranger.AutoCompleteManager;
 import gov.texas.tpwd.mobileranger.R;
-import gov.texas.tpwd.mobileranger.report.data.TreeReport;
 import gov.texas.tpwd.mobileranger.db.TreeReportManager;
-import gov.texas.tpwd.mobileranger.report.writer.TreeReportWriter;
 import gov.texas.tpwd.mobileranger.pdf.PdfWritable;
+import gov.texas.tpwd.mobileranger.report.data.TreeReport;
+import gov.texas.tpwd.mobileranger.report.writer.TreeReportWriter;
 
 
-public class MainActivity extends AppCompatActivity {
+public class ReportActivity extends AppCompatActivity {
 
-    private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String TAG = ReportActivity.class.getSimpleName();
     protected static final int BEFORE_PHOTO_REQUEST_CODE = 1;
     protected static final int AFTER_PHOTO_REQUEST_CODE = 1;
+    public static final String TREE_REPORT_EXTRA = "TreeReportExtra";
 
     private AutoCompleteTextView reportingEmployeeText;
     private Button dateButton;
@@ -62,15 +65,16 @@ public class MainActivity extends AppCompatActivity {
 
     private TreeReport treeReport;
     private TreeReportManager treeReportManager;
+    private boolean isDeleted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_report);
         calendar = Calendar.getInstance();
         autoCompleteManager = new AutoCompleteManager(getApplicationContext());
         employeeAutoCompleteAdapter = new EmployeeAutoCompleteAdapter();
-        treeReportManager = new TreeReportManager(this);
+        treeReportManager = TreeReportManager.getInstance(this);
         bindViews();
     }
 
@@ -130,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         if (resultCode == RESULT_OK) {
-            Log.d("MainActivity", "result ok");
+            Log.d("ReportActivity", "result ok");
             // Image captured and saved to fileUri specified in the Intent
                 if (requestCode == BEFORE_PHOTO_REQUEST_CODE) {
                     adapter.updateBeforeImage();
@@ -141,9 +145,9 @@ public class MainActivity extends AppCompatActivity {
 
         } else if (resultCode == RESULT_CANCELED) {
             // User cancelled the image capture
-            Log.d("MainActivity", "cancelled");
+            Log.d("ReportActivity", "cancelled");
         } else {
-            Log.d("MainActivity", "something terrible");
+            Log.d("ReportActivity", "something terrible");
         }
     }
 
@@ -158,6 +162,10 @@ public class MainActivity extends AppCompatActivity {
                 .setIcon(R.drawable.ic_add_white_24dp)
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
 
+        menu.add(Menu.NONE, 2, Menu.NONE, "Delete")
+                .setIcon(R.drawable.ic_delete_white_24dp)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+
         return true;
     }
 
@@ -168,9 +176,33 @@ public class MainActivity extends AppCompatActivity {
             return true;
         } else if(item.getItemId() == 1) {
             adapter.incrementSize();
+        } else if(item.getItemId() == 2) {
+            showDeleteAlert();
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void showDeleteAlert() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.dialog_delete_title)
+                .setMessage(R.string.dialog_delete_text)
+                .setPositiveButton(R.string.delete_button_text, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        treeReportManager.deleteTreeReport(treeReport);
+                        isDeleted = true;
+                        ReportActivity.this.finish();
+                    }
+                })
+                .setNegativeButton(R.string.delete_cancel_text, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+        builder.show();
+
     }
 
     private String generatePdf() {
@@ -198,7 +230,9 @@ public class MainActivity extends AppCompatActivity {
         }
         adapter.onPause();
         updateTreeReportFromUi();
-        treeReportManager.insertOrUpdateTreeReport(treeReport);
+        if(!isDeleted) {
+            treeReportManager.insertOrUpdateTreeReport(treeReport);
+        }
     }
 
     @Override
@@ -206,7 +240,15 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         if(treeReport == null) {
-            treeReport = treeReportManager.getTreeReport();
+            Log.d(TAG, "tree report is null");
+            TreeReport inTreeReport = getIntent().getParcelableExtra(TREE_REPORT_EXTRA);
+            if(inTreeReport != null) {
+                Log.d(TAG, "have in tree report with id:" + inTreeReport.getId());
+                treeReport = treeReportManager.getTreeReport(inTreeReport.getId());
+                Log.d(TAG, "queried tree report with id:" + treeReport.getId());
+            } else {
+                treeReport = treeReportManager.getTreeReport();
+            }
 
             int locationSize = 1;
             boolean haveLocations = false;
@@ -226,6 +268,8 @@ public class MainActivity extends AppCompatActivity {
             if(treeReport.getReportingEmployee() != null) {
                 reportingEmployeeText.setText(treeReport.getReportingEmployee());
             }
+        } else {
+            Log.d(TAG, "tree report not null");
         }
 
     }
@@ -258,8 +302,8 @@ public class MainActivity extends AppCompatActivity {
         private LayoutInflater inflater;
 
         public EmployeeAutoCompleteAdapter() {
-            super(MainActivity.this, null, 0);
-            this.inflater = LayoutInflater.from(MainActivity.this);
+            super(ReportActivity.this, null, 0);
+            this.inflater = LayoutInflater.from(ReportActivity.this);
         }
 
         @Override
@@ -293,7 +337,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            dialog = ProgressDialog.show(MainActivity.this, "",
+            dialog = ProgressDialog.show(ReportActivity.this, "",
                     "Generating PDF", true, false);
         }
 
@@ -309,7 +353,7 @@ public class MainActivity extends AppCompatActivity {
             if(filePath != null) {
                 onPdfGenerated(filePath);
             } else {
-                Toast.makeText(MainActivity.this, "There was a problem generating your PDF", Toast.LENGTH_LONG).show();
+                Toast.makeText(ReportActivity.this, "There was a problem generating your PDF", Toast.LENGTH_LONG).show();
             }
         }
     }

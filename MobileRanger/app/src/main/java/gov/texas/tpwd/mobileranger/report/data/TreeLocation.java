@@ -1,11 +1,9 @@
 package gov.texas.tpwd.mobileranger.report.data;
 
-import io.realm.RealmObject;
+import android.os.Parcel;
+import android.os.Parcelable;
 
-/**
- * Created by kris on 7/4/15.
- */
-public class TreeLocation {
+public class TreeLocation implements Parcelable {
 
     private long id;
     private long treeReportId;
@@ -70,4 +68,46 @@ public class TreeLocation {
     public void setAfterImagePath(String afterImagePath) {
         this.mAfterImagePath = afterImagePath;
     }
+
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeLong(this.id);
+        dest.writeLong(this.treeReportId);
+        dest.writeString(this.mLocation);
+        dest.writeString(this.mDetails);
+        dest.writeString(this.mActionTaken);
+        dest.writeString(this.mBeforeImagePath);
+        dest.writeString(this.mAfterImagePath);
+    }
+
+    public TreeLocation() {
+    }
+
+    protected TreeLocation(Parcel in) {
+        this.id = in.readLong();
+        this.treeReportId = in.readLong();
+        this.mLocation = in.readString();
+        this.mDetails = in.readString();
+        this.mActionTaken = in.readString();
+        this.mBeforeImagePath = in.readString();
+        this.mAfterImagePath = in.readString();
+    }
+
+    public static final Parcelable.Creator<TreeLocation> CREATOR = new Parcelable.Creator<TreeLocation>() {
+        @Override
+        public TreeLocation createFromParcel(Parcel source) {
+            return new TreeLocation(source);
+        }
+
+        @Override
+        public TreeLocation[] newArray(int size) {
+            return new TreeLocation[size];
+        }
+    };
 }

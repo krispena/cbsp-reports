@@ -4,7 +4,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="16dp"
+    android:layout_marginBottom="@dimen/card_bottom_margin"
     android:layout_marginLeft="@dimen/activity_horizontal_margin"
     android:layout_marginRight="@dimen/activity_horizontal_margin"
     >
@@ -12,8 +12,8 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginLeft="8dp"
-    android:layout_marginRight="8dp"
+    android:layout_marginLeft="@dimen/list_row_margins"
+    android:layout_marginRight="@dimen/list_row_margins"
    >
 
     <LinearLayout
@@ -30,12 +30,12 @@
 
         <EditText
             android:id="@+id/locationEdit"
-            android:layout_marginLeft="10dp"
+            android:layout_marginLeft="@dimen/location_title_margin"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:maxLines="1"
             android:lines="1"
-            android:inputType="text"
+            android:inputType="textNoSuggestions"
             android:imeOptions="actionNext"/>
 
     </LinearLayout>

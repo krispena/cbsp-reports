@@ -2,4 +2,7 @@
 <resources>
     <color name="tpwd_green">#2D6F4E</color>
     <color name="dark_green">#063D21</color>
+    <color name="tpwd_brown">#36270D</color>
+    <color name="divider_color">#000000</color>
+    <color name="white">#ffffff</color>
 </resources>

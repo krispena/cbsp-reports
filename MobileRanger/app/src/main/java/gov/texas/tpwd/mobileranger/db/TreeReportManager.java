@@ -9,6 +9,9 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import gov.texas.tpwd.mobileranger.report.data.TreeLocation;
 import gov.texas.tpwd.mobileranger.report.data.TreeReport;
 
@@ -26,6 +29,9 @@ public class TreeReportManager {
     private static final String[] REPORT_COLS = new String[]{COL_ID, COL_DATE, COL_REPORTING_EMPLOYEE};
 
     private static final String COL_TREE_REPORT_ID = "tree_report_id";
+    private static final String TREE_REPORT_ID_WHERE_CLAUSE = COL_TREE_REPORT_ID + "=?";
+    private static final String ID_WHERE_CLAUSE = COL_ID + "=?";
+
     private static final String COL_LOCATION = "location";
     private static final String COL_DETAILS = "details";
     private static final String COL_ACTION_TAKEN = "action_taken";
@@ -36,8 +42,16 @@ public class TreeReportManager {
 
     private Context context;
     private MySQLiteOpenHelper helper;
+    private static TreeReportManager instance;
 
-    public TreeReportManager(Context context) {
+    public static TreeReportManager getInstance(Context context) {
+        if(instance == null) {
+            instance = new TreeReportManager(context);
+        }
+        return instance;
+    }
+
+    private TreeReportManager(Context context) {
         this.context = context;
         this.helper = new MySQLiteOpenHelper();
     }
@@ -83,18 +97,57 @@ public class TreeReportManager {
         }
     }
 
-    public TreeReport getTreeReport() {
-        TreeReport treeReport = new TreeReport();
+    public void deleteTreeReport(TreeReport treeReport) {
+        if(treeReport == null) {
+            return;
+        }
+        SQLiteDatabase db = helper.getWritableDatabase();
+        try {
+            db.beginTransaction();
+            String deleteId = Long.toString(treeReport.getId());
+            db.delete(TABLE_TREE_REPORT, ID_WHERE_CLAUSE, new String[]{deleteId});
+            db.delete(TABLE_TREE_LOCATION, TREE_REPORT_ID_WHERE_CLAUSE, new String[]{deleteId});
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+
+    }
+
+    public List<TreeReport> getTreeReports() {
+        List<TreeReport> reports = new ArrayList<>();
         long treeReportId = -1;
         SQLiteDatabase db = helper.getWritableDatabase();
         Cursor cursor = db.query(TABLE_TREE_REPORT, REPORT_COLS, null, null, null, null, null);
-        if(cursor.moveToNext()) { //just do first report for now, should only be 1
-            treeReportId = cursor.getLong(cursor.getColumnIndex(COL_ID));
-            treeReport.setId(treeReportId);
-            treeReport.setDate(cursor.getString(cursor.getColumnIndex(COL_DATE)));
-            treeReport.setReportingEmployee(cursor.getString(cursor.getColumnIndex(COL_REPORTING_EMPLOYEE)));
+        while(cursor.moveToNext()) { //just do first report for now, should only be 1
+            TreeReport treeReport = new TreeReport();
+            setTreeReport(treeReport, cursor);
+            reports.add(treeReport);
         }
+        cursor.close();
 
+
+        return reports;
+    }
+
+    public TreeReport getTreeReport() {
+        return getTreeReport(-1);
+    }
+
+    public TreeReport getTreeReport(long id) {
+        TreeReport treeReport = new TreeReport();
+        long treeReportId = -1;
+        SQLiteDatabase db = helper.getWritableDatabase();
+        Cursor cursor;
+        if(id > 0) {
+            cursor = db.query(TABLE_TREE_REPORT, REPORT_COLS, ID_WHERE_CLAUSE, new String[]{Long.toString(id)}, null, null, null);
+        } else {
+            cursor = db.query(TABLE_TREE_REPORT, REPORT_COLS, null, null, null, null, null);
+        }
+        if(cursor.moveToNext()) { //just do first report for now, should only be 1
+            treeReportId = setTreeReport(treeReport, cursor);
+        }
+        cursor.close();
         if(treeReportId > 0) {
             addTreeLocations(db, treeReport);
         } else {
@@ -104,8 +157,17 @@ public class TreeReportManager {
         return treeReport;
     }
 
+    private long setTreeReport(TreeReport treeReport, Cursor cursor) {
+        long treeReportId = cursor.getLong(cursor.getColumnIndex(COL_ID));
+        treeReport.setId(treeReportId);
+        treeReport.setDate(cursor.getString(cursor.getColumnIndex(COL_DATE)));
+        treeReport.setReportingEmployee(cursor.getString(cursor.getColumnIndex(COL_REPORTING_EMPLOYEE)));
+        return treeReportId;
+    }
+
     private void addTreeLocations(SQLiteDatabase db, TreeReport treeReport) {
-        Cursor cursor = db.query(TABLE_TREE_LOCATION, LOCATION_COLS, null, null, null, null, null);
+        String reportId = Long.toString(treeReport.getId());
+        Cursor cursor = db.query(TABLE_TREE_LOCATION, LOCATION_COLS, TREE_REPORT_ID_WHERE_CLAUSE, new String[]{reportId}, null, null, null);
         while(cursor.moveToNext()) {
             TreeLocation location = new TreeLocation();
             location.setId(cursor.getLong(cursor.getColumnIndex(COL_ID)));
