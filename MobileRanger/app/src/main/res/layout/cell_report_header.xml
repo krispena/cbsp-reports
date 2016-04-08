@@ -25,7 +25,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginLeft="10dp"
-            android:text="@string/button_date_picker" />
+            android:text="@string/button_date_picker"
+            style="@style/ButtonStyle"/>
 
     </LinearLayout>
 

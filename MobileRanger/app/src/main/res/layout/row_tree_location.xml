@@ -98,7 +98,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="@string/form_take_photo" />
+                android:text="@string/form_take_photo"
+                style="@style/ButtonStyle"/>
 
         </LinearLayout>
 
@@ -129,7 +130,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="@string/form_take_photo" />
+                android:text="@string/form_take_photo"
+                style="@style/ButtonStyle"/>
 
         </LinearLayout>
     </LinearLayout>
