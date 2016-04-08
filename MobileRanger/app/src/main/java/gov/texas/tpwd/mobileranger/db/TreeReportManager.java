@@ -60,8 +60,9 @@ public class TreeReportManager {
 //        new CreateOrUpdateTask(type, value).execute();
 //    }
 
-    public void insertOrUpdateTreeReport(TreeReport report) {
+    public long insertOrUpdateTreeReport(TreeReport report) {
         SQLiteDatabase db = helper.getWritableDatabase();
+        long treeReportId = -1;
         try {
             db.beginTransaction();
 
@@ -71,7 +72,7 @@ public class TreeReportManager {
             }
             values.put(COL_DATE, report.getDate());
             values.put(COL_REPORTING_EMPLOYEE, report.getReportingEmployee());
-            long treeReportId = db.insertWithOnConflict(TABLE_TREE_REPORT, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+            treeReportId = db.insertWithOnConflict(TABLE_TREE_REPORT, null, values, SQLiteDatabase.CONFLICT_REPLACE);
             Log.d("TreeReportManager", "insert treeReport " + treeReportId);
             for(TreeLocation location:report.getLocations()) {
                 ContentValues locationValues = new ContentValues();
@@ -95,6 +96,7 @@ public class TreeReportManager {
         } finally {
             db.endTransaction();
         }
+        return treeReportId;
     }
 
     public void deleteTreeReport(TreeReport treeReport) {
@@ -128,10 +130,6 @@ public class TreeReportManager {
 
 
         return reports;
-    }
-
-    public TreeReport getTreeReport() {
-        return getTreeReport(-1);
     }
 
     public TreeReport getTreeReport(long id) {

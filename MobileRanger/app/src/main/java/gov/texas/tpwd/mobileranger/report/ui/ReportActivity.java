@@ -231,7 +231,8 @@ public class ReportActivity extends AppCompatActivity {
         adapter.onPause();
         updateTreeReportFromUi();
         if(!isDeleted) {
-            treeReportManager.insertOrUpdateTreeReport(treeReport);
+            long id = treeReportManager.insertOrUpdateTreeReport(treeReport);
+            treeReport.setId(id);
         }
     }
 
@@ -240,14 +241,11 @@ public class ReportActivity extends AppCompatActivity {
         super.onResume();
 
         if(treeReport == null) {
-            Log.d(TAG, "tree report is null");
             TreeReport inTreeReport = getIntent().getParcelableExtra(TREE_REPORT_EXTRA);
             if(inTreeReport != null) {
-                Log.d(TAG, "have in tree report with id:" + inTreeReport.getId());
                 treeReport = treeReportManager.getTreeReport(inTreeReport.getId());
-                Log.d(TAG, "queried tree report with id:" + treeReport.getId());
             } else {
-                treeReport = treeReportManager.getTreeReport();
+                treeReport = new TreeReport();
             }
 
             int locationSize = 1;
